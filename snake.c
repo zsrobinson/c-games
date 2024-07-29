@@ -19,6 +19,7 @@ typedef struct apple {
   int y;
 } Apple;
 
+// function signatures
 void free_snake(Segment *seg);
 void step_snake(Segment *seg);
 void print_board(Segment *snake, Apple *apple);
@@ -29,9 +30,9 @@ int valid_move(int c);
 
 int main() {
   // init ncurses, set arguments
-  WINDOW *w = initscr(); 
+  initscr(); 
   noecho();
-  nodelay(w, 1);
+  nodelay(stdscr, 1);
   cbreak();
   keypad(stdscr, TRUE);
 
@@ -111,6 +112,7 @@ void free_snake(Segment *seg) {
   free(seg);
 }
 
+/** prints the game board to `stdscr` (the standard output of ncurses) */
 void print_board(Segment *snake, Apple *apple) {
   char board[HEIGHT][WIDTH];
 
@@ -137,6 +139,7 @@ void print_board(Segment *snake, Apple *apple) {
   }
 }
 
+/** adds a new segment to the beginning of the snake given a game move */
 Segment* add_segment(Segment* snake, int move) {
   Segment *new_seg = malloc(sizeof(Segment));
   new_seg->x = snake->x; new_seg->y = snake->y; new_seg->next = snake;
@@ -154,6 +157,7 @@ Segment* add_segment(Segment* snake, int move) {
   return new_seg;
 }
 
+/** determines if a set of cords belong to a segment of the snake */
 int overlaps_snake(int x, int y, Segment *snake) {
   if (snake == NULL) {
     return 0;
@@ -166,6 +170,7 @@ int overlaps_snake(int x, int y, Segment *snake) {
   }
 }
 
+/** sets the cords of the apple struct to a random non-snake board cell */
 void set_rand_apple(Apple *apple, Segment *snake) {
   apple->x = rand() % WIDTH;
   apple->y = rand() % HEIGHT;
@@ -175,6 +180,7 @@ void set_rand_apple(Apple *apple, Segment *snake) {
   }
 }
 
+/** determines if a key press from `getch` is a valid game move */
 int valid_move(int c) {
   return c == 'w' || c == 'a' || c == 's' || c == 'd'
     || c == KEY_UP || c == KEY_LEFT || c == KEY_DOWN || c == KEY_RIGHT;
