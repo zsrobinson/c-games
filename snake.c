@@ -6,6 +6,7 @@
 
 #define WIDTH 40
 #define HEIGHT 10
+#define HALF_SEC 500000
 
 typedef struct segment {
   int x;
@@ -21,10 +22,10 @@ typedef struct apple {
 void free_snake(Segment *seg);
 void step_snake(Segment *seg);
 void print_board(Segment *snake, Apple *apple);
-Segment* add_segment(Segment* snake, char move);
+Segment* add_segment(Segment* snake, int move);
 int overlaps_snake(int x, int y, Segment *snake);
 void set_rand_apple(Apple *apple, Segment *snake);
-int valid_move(char c);
+int valid_move(int c);
 
 int main() {
   // init ncurses, set arguments
@@ -32,6 +33,7 @@ int main() {
   noecho();
   nodelay(w, 1);
   cbreak();
+  keypad(stdscr, TRUE);
 
   clear(); // clear the screen
   srand(time(NULL)); // seed the rng
@@ -42,7 +44,7 @@ int main() {
 
   // init variables and get apple to start
   int score = 1;
-  char move = 'd';
+  int move = 'd';
   Apple apple;
   set_rand_apple(&apple, snake);
 
@@ -51,7 +53,7 @@ int main() {
     clear(); // clear the screen
 
     // get the last character pressed
-    char new_move = move;
+    int new_move = move;
     while (new_move != ERR) {
       new_move = getch();
       if (valid_move(new_move)) {
@@ -62,26 +64,28 @@ int main() {
     }
 
     snake = add_segment(snake, move); // add to snake
-
+    
     // check for overflow, game over
     if (snake->x < 0 || snake->x >= WIDTH) return 0;
     if (snake->y < 0 || snake->y >= HEIGHT) return 0;
 
-    if (overlaps_snake(snake->x, snake->y, snake->next)) {
-      return 0; // game over
-    }
-    
+    // check for apple collision
     if (apple.x == snake->x && apple.y == snake->y) {
       score++;
       set_rand_apple(&apple, snake);
     } else {
-      step_snake(snake);
+      step_snake(snake); // otherwise add new segment
+    }
+
+    if (overlaps_snake(snake->x, snake->y, snake->next)) {
+      return 0; // game over
     }
 
     print_board(snake, &apple);
     printw("score: %d\n", score);
     refresh(); // push buffer to screen
-    sleep(1); // wait a second
+
+    usleep(HALF_SEC);
   }
   
   endwin();
@@ -133,17 +137,17 @@ void print_board(Segment *snake, Apple *apple) {
   }
 }
 
-Segment* add_segment(Segment* snake, char move) {
+Segment* add_segment(Segment* snake, int move) {
   Segment *new_seg = malloc(sizeof(Segment));
   new_seg->x = snake->x; new_seg->y = snake->y; new_seg->next = snake;
 
-  if (move == 'w') { // up
+  if (move == 'w' || move == KEY_UP) { // up
     new_seg->y--;
-  } else if (move == 'a') { // left
+  } else if (move == 'a' || move == KEY_LEFT) { // left
     new_seg->x--;
-  } else if (move == 's') {
+  } else if (move == 's' || move == KEY_DOWN) { // down
     new_seg->y++;
-  } else if (move == 'd') {
+  } else if (move == 'd' || move == KEY_RIGHT) { // right
     new_seg->x++;
   }
 
@@ -151,7 +155,9 @@ Segment* add_segment(Segment* snake, char move) {
 }
 
 int overlaps_snake(int x, int y, Segment *snake) {
-  if (x == snake->x && y == snake->y) {
+  if (snake == NULL) {
+    return 0;
+  } else if (x == snake->x && y == snake->y) {
     return 1;
   } else if (snake->next) {
     return overlaps_snake(x, y, snake->next);
@@ -169,6 +175,7 @@ void set_rand_apple(Apple *apple, Segment *snake) {
   }
 }
 
-int valid_move(char c) {
-  return c == 'w' || c == 'a' || c == 's' || c == 'd';
+int valid_move(int c) {
+  return c == 'w' || c == 'a' || c == 's' || c == 'd'
+    || c == KEY_UP || c == KEY_LEFT || c == KEY_DOWN || c == KEY_RIGHT;
 }
