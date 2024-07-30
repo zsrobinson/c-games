@@ -4,9 +4,14 @@
 #include <unistd.h>
 #include <ncurses.h>
 
-#define WIDTH 40
+#define WIDTH 20
 #define HEIGHT 10
-#define HALF_SEC 500000
+#define SPEED_INITIAL 500000 // half second
+#define SPEED_RATE 0.95 // controls the snake getting faster
+
+#define COLOR_BG -1
+#define COLOR_SNAKE 1
+#define COLOR_APPLE 2
 
 typedef struct segment {
   int x;
@@ -29,12 +34,18 @@ void set_rand_apple(Apple *apple, Segment *snake);
 int valid_move(int c);
 
 int main() {
-  // init ncurses, set arguments
+  // init ncurses and set arguments
   initscr(); 
   noecho();
   nodelay(stdscr, 1);
   cbreak();
   keypad(stdscr, TRUE);
+
+  // init colors for ncurses
+  use_default_colors();
+  start_color();
+  init_pair(COLOR_SNAKE, COLOR_GREEN, COLOR_BG);
+  init_pair(COLOR_APPLE, COLOR_RED, COLOR_BG);
 
   clear(); // clear the screen
   srand(time(NULL)); // seed the rng
@@ -46,6 +57,7 @@ int main() {
   // init variables and get apple to start
   int score = 1;
   int move = 'd';
+  int speed = SPEED_INITIAL;
   Apple apple;
   set_rand_apple(&apple, snake);
 
@@ -73,6 +85,7 @@ int main() {
     // check for apple collision
     if (apple.x == snake->x && apple.y == snake->y) {
       score++;
+      speed *= SPEED_RATE;
       set_rand_apple(&apple, snake);
     } else {
       step_snake(snake); // otherwise add new segment
@@ -83,10 +96,10 @@ int main() {
     }
 
     print_board(snake, &apple);
-    printw("score: %d\n", score);
+    printw("score: %d, speed: %.2f\n", score, 1000000 / (float) speed);
     refresh(); // push buffer to screen
 
-    usleep(HALF_SEC);
+    usleep(speed);
   }
   
   endwin();
@@ -133,7 +146,13 @@ void print_board(Segment *snake, Apple *apple) {
 
   for (int y = 0; y < HEIGHT; y++) {
     for (int x = 0; x < WIDTH; x++) {
-      printw("%c", board[y][x]);
+      if (board[y][x] == 'O') attron(COLOR_PAIR(COLOR_SNAKE));
+      if (board[y][x] == '@') attron(COLOR_PAIR(COLOR_APPLE));
+
+      printw("%c ", board[y][x]);
+
+      if (board[y][x] == 'O') attroff(COLOR_PAIR(COLOR_SNAKE));
+      if (board[y][x] == '@') attroff(COLOR_PAIR(COLOR_APPLE));
     }
     printw("\n");
   }
