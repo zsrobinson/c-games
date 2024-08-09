@@ -18,6 +18,9 @@ typedef struct player {
   int y;
 } Player;
 
+int valid_move(int c);
+void print_game(Player *player);
+
 int main() {
   int round_time = 10, lives = 7, score = 0; // global game variables
 
@@ -32,15 +35,43 @@ int main() {
   nodelay(stdscr, 1);
   cbreak();
   keypad(stdscr, TRUE);
-  clear();
 
   srand(time(NULL));
 
-  /* print game */
+  clear();
+  print_game(player);
+  refresh();
+
+  while (1) {
+    int input = getch();
+    if (input == 'q') break;
+    if (valid_move(input)) {
+      if (input == 'w' || input == KEY_UP) { // up
+        player->y++;
+      } else if (input == 'a' || input == KEY_LEFT) { // left
+        player->x--;
+      } else if (input == 's' || input == KEY_DOWN) { // down
+        player->y--;
+      } else if (input == 'd' || input == KEY_RIGHT) { // right
+        player->x++;
+      }
+    } else {
+      continue;
+    }
+
+    clear();
+    print_game(player);
+    refresh();
+  }
+
+  return 0;
+}
+
+void print_game(Player *player) {
   char board[BOARD_HEIGHT][BOARD_WIDTH];
 
-  for (int y = 0; y <= BOARD_HEIGHT; y++) {
-    for (int x = 0; x <= BOARD_WIDTH; x++) {
+  for (int y = 0; y < BOARD_HEIGHT; y++) {
+    for (int x = 0; x < BOARD_WIDTH; x++) {
       board[y][x] = ' ';
     }
   }
@@ -73,7 +104,10 @@ int main() {
   }
 
   printw(" |---------------------------|\n");
-  refresh();
+}
 
-  return 0;
+/** determines if a key press from `getch` is a valid game move */
+int valid_move(int c) {
+  return c == 'w' || c == 'a' || c == 's' || c == 'd'
+    || c == KEY_UP || c == KEY_LEFT || c == KEY_DOWN || c == KEY_RIGHT;
 }
